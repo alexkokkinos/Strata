@@ -66,6 +66,20 @@ and their limits. Report what you actually measured and label estimates separate
   IQ2_XS with adaptive cache E4/S24: 48.23 accepted-decode tok/s (median of 5) on a modified, locally built engine (not an official release; source commit and hashes in provenance.json, steps in REPRODUCE.md).
 - [2026-10-12: Radeon 780M (gfx1103), Ryzen 7 8745HS, 60 GB RAM, GTT 50 GiB](../bench/results/2026-10-12-community-gfx1103/README.md):
   the gfx1103 port (native dot4, the gfx11 WMMA kernels, the exact speed switches and a calibrated hipBLASLt table), hand-built on ROCm 10.1, Q2_0 + MTP at 32K: prompts 90 tok/s plain, 186 with the table, 277 with the WMMA opt-ins (4K), decode 13.1 -> 14.3 tok/s; zero GPU resets.
+- [2026-10-18: AMD Radeon RX 9060 XT 16 GB (gfx1200) passed through to a Proxmox VM (Debian 13, Linux 6.12.111+deb13-amd64), Ryzen 5 3600, 12 threads, 86.3 GiB RAM](../bench/results/2026-10-18-community-rx-9060-xt-vm-swift-1-5/README.md):
+  Strata 0.1.45 (`477ac13c`) on TheRock ROCm wheels, Swift 1.5 (Qwen3.8-Flash-Next fine-tune, 256 experts x 48 layers) in **IQ2_XS, IQ3_XXS and IQ3_S**, 131,072-token context, `--kv int8`,
+  131,072 context: **12 `tools/strata_bench.py --long` suites in a 3 x 2 x 2 design** (3 quants x WMMA on/off x 1-slot/2-slot), 468 timed requests, 0 failures.
+  **`STRATA_HIP_WMMA=1` is a prefill kernel and the six matched pairs say exactly that**: 16K prompts 1.33-1.79x, 32K prompts 1.41-1.77x (geomean **+52.3%** and **+53.1%**), 32K first token
+  **-28.9% to -43.5%** (geomean -34.6%), suite wall time **-19.4% to -30.3%**, and **decode flat**: chat geomean -0.2%, agent-turn geomean +1.3%. 4K is noise-limited (within-arm spread up to 22.8%).
+  **`"parallel": 2`** in one process: **1.169-1.216x aggregate** output, per-stream decode **chat -14.4% to -17.8%** (WMMA on) / -16.0% to -21.5% (off), agent turns -14.7% to -16.2%, prompt
+  throughput unchanged (nine pairs, geomean +1.5%), first token +31.6% (geomean). **Two real clients** (2 clients x 3 rounds, fresh 400-word prompts, 128 tokens): 35.0 / 27.1 / 24.1 tok/s aggregate
+  on IQ2_XS / IQ3_XXS / IQ3_S = **91.0% / 77.5% / 79.1%** of that arm's solo stream, 12.1-17.5 tok/s per client, p50 first token 1.48-2.53 s, p95/p50 latency 6.5-18.8%, 0 errors.
+  **The quant is the budget on 16 GB**: IQ2_XS gets 7,465 expert slots (10,239 MiB) at 1 slot, IQ3_XXS 5,846, IQ3_S 4,774; the arena is 33,812 / 40,925 / 47,962 MiB (1.42x), and IQ3_S decodes
+  -17.6% (chat) / -21.0% (agent) against IQ2_XS, with prefill all over the place (+5.3%, +12.1%, +9.4% at 1 slot; +35.6%, +24.6%, +23.7% at 2 slots); that comparison is **not a clean pair** - the engine answers `pool_workers: 7` and `spec_min_p: 0.50` on the
+  six IQ2_XS arms and 11 / 0.70 on the six IQ3_XXS/IQ3_S arms, constant inside a quant, so every quant comparison carries that bundle and the WMMA and parallel pairs (inside one quant) do not.
+  Speculation acceptance, recorded per request, is set by the quant: 57.7-61.0% (IQ2_XS), 74.7-77.8% (IQ3_XXS),
+  72.0-73.5% (IQ3_S) on chat. Speed only: no recall, coding, KL, needle test, no cross-arm output-identity check, and **no engine log** - `params.env` is null, so the WMMA arm labels are the
+  operator's run log; the 16K medians split into two clean clusters (1,212-1,510 vs 819-978 tok/s) with no overlap. `machine` records nothing about the VM (no IOMMU group, driver, power or clock).
 
 ## Run the benchmark
 
