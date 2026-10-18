@@ -20,7 +20,7 @@ that README.md states them.
   within the run-to-run spread of a single arm. The long-prompt columns gain a lot (next bullet).
   Two pairs are negative on 4K (-3.1% IQ2_XS at 1 slot, -3.9% IQ3_S at 1 slot) and both are inside
   the 4K column's noise, which is the widest in this report (up to 22.8% inside one arm).
-- **16K and 32K prompt processing: +40.1% to +78.5%** with `STRATA_HIP_WMMA=1`, geomean over the
+- **16K and 32K prompt processing: +32.8% to +78.5%** with `STRATA_HIP_WMMA=1`, geomean over the
   six pairs **+52.3%** at 16K, **+53.1%** at 32K. Time to first token at 32K is geomean **-34.6%**.
   The 4K median gains **+22.4%** (geomean), the one column that is not clean, see the noise bullet.
 - **Two engine slots in one process: 1.17-1.22x aggregate** (1 / (1 - 14.4%) to 1 / (1 - 17.8%))
@@ -313,7 +313,7 @@ Time to first token, same pairs (negative = WMMA is faster):
   with the six pairs straddling zero, -5.1% to +4.8%. `docs/AMD_HIP.md` describes the kernel as a
   prefill-side change (it is the prompt path that changes shape), and that is what these pairs say:
   100-token chats and 4-64-token agent turns are decode-bound, so the kernel has nothing to do.
-- **Prefill: this is where it lives.** 16K +40.1% to +62.9% at 1 slot, +47.9% to +78.5% at 2 slots,
+- **Prefill: this is where it lives.** 16K +32.8% to +62.9% at 1 slot, +47.9% to +78.5% at 2 slots,
   geomean +52.3%. At 32K, +40.7% to +77.2%, geomean +53.1%. Time to first token at 32K drops
   -28.9% to -43.5%, geomean -34.6%: a 32K prompt that took 35.1-39.1 s starts landing in
   21.6-26.8 s.

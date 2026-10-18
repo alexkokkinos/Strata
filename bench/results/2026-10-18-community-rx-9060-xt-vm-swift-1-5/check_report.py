@@ -284,6 +284,17 @@ def main(data_dir="data", readme="README.md"):
     w16 = sorted(md(d[a]["results"], "p", "16K") for a in ARM_NAMES if "-wmma-" in a)
     p16 = sorted(md(d[a]["results"], "p", "16K") for a in ARM_NAMES if "-plain-" in a)
     assert p16[-1] < w16[0], f"the 16K clusters overlap: plain max {p16[-1]}, wmma min {w16[0]}"
+    pr = {(L, s): 100 * (md(d[f"{q}-wmma-p{s}"]["results"], "p", L) /
+                         md(d[f"{q}-plain-p{s}"]["results"], "p", L) - 1)
+          for q in QUANTS for s in (1, 2) for L in ("4K", "16K", "32K")}
+    for lab, keys in [("16K pairs", [(L, s) for L in ("16K", "32K") for s in (1, 2)]),
+                      ("16K 1-slot", [("16K", 1)]), ("16K 2-slot", [("16K", 2)]),
+                      ("32K pairs", [("32K", 1), ("32K", 2)]),
+                      ("4K pairs", [("4K", 1), ("4K", 2)]),
+                      ("prefill pairs", list(pr))]:
+        vals = sorted(pr[k] for k in keys)
+        add(f"{lab} min", f"{vals[0]:+.1f}%")
+        add(f"{lab} max", f"{vals[-1]:+.1f}%")
     add("16K clusters wmma", f"{w16[0]:,.0f}-{w16[-1]:,.0f}")
     add("16K clusters plain", f"{p16[0]:,.0f}-{p16[-1]:,.0f}")
     lo = min(md(d[a]["results"], "p", "16K") for a in d if "-wmma-" in a)
